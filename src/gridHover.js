@@ -1,23 +1,19 @@
-import gsap, { Linear } from 'gsap';
 
+import { gsap } from 'gsap';
 
-function getExpandedFlexBasis(childrenCount, collapsedFlexValue = 2) {
-  if (childrenCount <= 1) return '100%';
-  // n = number of collapsed children
-  const n = childrenCount - 1;
-  // Use string interpolation for calc so CSS can handle math, not JS
-  return `calc(100% - ${collapsedFlexValue}rem * ${n})`;
-}
-
-
-function setGridHoverEffectGSAP(idx, children, collapsedFlexValue = 2, duration = 0.5) {
-  const expandedFlexBasis = getExpandedFlexBasis(children.length, collapsedFlexValue);
+function setGridHoverEffectGSAP(idx, children, collapsedFlexValue = 2) {
+  const container = children[0]?.parentElement;
+  if (!container) return;
+  const totalWidth = container.clientWidth;
+  const collapsedPx = collapsedFlexValue * 16; // 1rem = 16px
+  const numChildren = children.length;
+  const activeWidth = Math.max(totalWidth - (numChildren - 1) * collapsedPx, collapsedPx);
   children.forEach((child, i) => {
-    const targetBasis = i === idx ? expandedFlexBasis : `${collapsedFlexValue}rem`;
+    let targetWidth = i === idx ? activeWidth : collapsedPx;
     gsap.to(child, {
-      flexBasis: targetBasis,
-      duration,
-      ease: Linear.easeNone,
+      width: targetWidth,
+      duration: 0.4,
+      ease: 'power2.out',
       overwrite: 'auto',
     });
   });
@@ -25,27 +21,47 @@ function setGridHoverEffectGSAP(idx, children, collapsedFlexValue = 2, duration 
 
 export function createGridHoverEffect({
   containerId = 'grid-container',
-  collapsedFlexValue = 2,
-  duration = 0.3
+  collapsedFlexValue = 2
 } = {}) {
   const container = document.getElementById(containerId);
   if (!container) throw new Error('Grid container not found');
-  const children = Array.from(container.children);
+  let children = Array.from(container.children);
   let activeIndex = 0;
-  const expandedFlexBasis = getExpandedFlexBasis(children.length, collapsedFlexValue);
+
+  // Set initial widths
   children.forEach((child, i) => {
-    child.style.flex = '0 0 auto';
-    child.style.flexBasis = i === activeIndex ? expandedFlexBasis : `${collapsedFlexValue}rem`;
+    child.style.width = i === activeIndex ? `calc(100% - ${(children.length - 1) * collapsedFlexValue}rem)` : `${collapsedFlexValue}rem`;
+    child.style.flex = 'none';
   });
+
+  function updateChildren() {
+    children = Array.from(container.children);
+  }
+
+  function setWidths(idx, collapsedVal = collapsedFlexValue) {
+    updateChildren();
+    setGridHoverEffectGSAP(idx, children, collapsedVal);
+  }
+
   children.forEach((child, idx) => {
     child.addEventListener('mouseenter', () => {
       if (activeIndex !== idx) {
         activeIndex = idx;
-        setGridHoverEffectGSAP(activeIndex, children, collapsedFlexValue, duration);
+        setWidths(activeIndex);
       }
     });
   });
+
+  // For dynamic children, observe mutations
+  const observer = new MutationObserver(() => {
+    updateChildren();
+    setWidths(activeIndex);
+  });
+  observer.observe(container, { childList: true });
+
+  setWidths(activeIndex);
+
   return (newCollapsedFlexValue) => {
-    setGridHoverEffectGSAP(activeIndex, children, newCollapsedFlexValue ?? collapsedFlexValue, duration);
+    setWidths(activeIndex, newCollapsedFlexValue ?? collapsedFlexValue);
   };
 }
