@@ -1,15 +1,16 @@
 import { create } from 'zustand'
+import { MAX_WINDOWS, MIN_WINDOWS } from '../constants'
 
 export type WindowConfig = {
   id: string
   url: string
-  active: boolean
 }
 
 type WindowsState = {
   windows: WindowConfig[]
+  activeWindowId: string
   actions: {
-    addWindow: (url?: string) => void
+    addWindow: (position: 'before' | 'after', url?: string) => void
     removeWindow: (id: string) => void
     setActive: (id: string) => void
     setUrl: (id: string, url: string) => void
@@ -19,36 +20,43 @@ type WindowsState = {
 const initialWindow: WindowConfig = {
   id: crypto.randomUUID(),
   url: '',
-  active: true,
 }
 
 export const useWindowsStore = create<WindowsState>(set => ({
   windows: [initialWindow],
+  activeWindowId: initialWindow.id,
   actions: {
-    addWindow: (url = '') => {
+    addWindow: (position, url = '') => {
       const id = crypto.randomUUID()
-      set(s => ({
-        windows: s.windows.length < 6
-          ? s.windows.map(w => ({ ...w, active: false })).concat({ id, url, active: true })
-          : s.windows,
-      }))
+      set((s) => {
+        if (s.windows.length >= MAX_WINDOWS)
+          return { windows: s.windows, activeWindowId: s.activeWindowId }
+        const activeIdx = s.windows.findIndex(w => w.id === s.activeWindowId)
+        const newWindows = [...s.windows]
+        if (position === 'before') {
+          newWindows.splice(activeIdx, 0, { id, url })
+        }
+        else {
+          newWindows.splice(activeIdx + 1, 0, { id, url })
+        }
+        return { windows: newWindows, activeWindowId: id }
+      })
     },
     removeWindow: (id) => {
       set((s) => {
         const filtered = s.windows.filter(w => w.id !== id)
-        if (filtered.length === 0)
-          return { windows: [initialWindow] }
-        // Set first window active if removed was active
-        const wasActive = s.windows.find(w => w.id === id)?.active
-        if (wasActive)
-          filtered[0].active = true
-        return { windows: filtered }
+        let newActiveId = s.activeWindowId
+        if (filtered.length < MIN_WINDOWS) {
+          return { windows: [initialWindow], activeWindowId: initialWindow.id }
+        }
+        if (s.activeWindowId === id) {
+          newActiveId = filtered[0].id
+        }
+        return { windows: filtered, activeWindowId: newActiveId }
       })
     },
     setActive: (id) => {
-      set(s => ({
-        windows: s.windows.map(w => ({ ...w, active: w.id === id })),
-      }))
+      set(_s => ({ activeWindowId: id }))
     },
     setUrl: (id, url) => {
       set(s => ({
@@ -60,4 +68,9 @@ export const useWindowsStore = create<WindowsState>(set => ({
 
 export const useWindows = () => useWindowsStore(s => s.windows)
 export const useWindowActions = () => useWindowsStore(s => s.actions)
-export const useActiveWindow = () => useWindowsStore(s => s.windows.find(w => w.active))
+export const useActiveWindowId = () => useWindowsStore(s => s.activeWindowId)
+export function useActiveWindow() {
+  const windows = useWindowsStore(s => s.windows)
+  const activeId = useWindowsStore(s => s.activeWindowId)
+  return windows.find(w => w.id === activeId)
+}
