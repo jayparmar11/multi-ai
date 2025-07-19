@@ -28,29 +28,52 @@ export function createGridHoverEffect({
   let children = Array.from(container.children);
   let activeIndex = 0;
 
-  // Set initial widths
-  children.forEach((child, i) => {
-    child.style.width = i === activeIndex ? `calc(100% - ${(children.length - 1) * collapsedFlexValue}rem)` : `${collapsedFlexValue}rem`;
-    child.style.flex = 'none';
-  });
+  function removeListeners() {
+    children.forEach((child) => {
+      child._mouseenterHandler && child.removeEventListener('mouseenter', child._mouseenterHandler);
+      child._mouseenterHandler = null;
+    });
+  }
+
+  function addListeners() {
+    children.forEach((child, idx) => {
+      const handler = () => {
+        if (activeIndex !== idx) {
+          activeIndex = idx;
+          setWidths(activeIndex);
+        }
+      };
+      child.addEventListener('mouseenter', handler);
+      child._mouseenterHandler = handler;
+    });
+  }
 
   function updateChildren() {
+    removeListeners();
     children = Array.from(container.children);
+    addListeners();
+  }
+
+
+  function setActiveClass(idx) {
+    children.forEach((child, i) => {
+      if (i === idx) {
+        child.classList.add('active');
+      } else {
+        child.classList.remove('active');
+      }
+    });
   }
 
   function setWidths(idx, collapsedVal = collapsedFlexValue) {
     updateChildren();
+    setActiveClass(idx);
     setGridHoverEffectGSAP(idx, children, collapsedVal);
   }
 
-  children.forEach((child, idx) => {
-    child.addEventListener('mouseenter', () => {
-      if (activeIndex !== idx) {
-        activeIndex = idx;
-        setWidths(activeIndex);
-      }
-    });
-  });
+  // Initial setup
+  updateChildren();
+  setWidths(activeIndex);
 
   // For dynamic children, observe mutations
   const observer = new MutationObserver(() => {
@@ -58,8 +81,6 @@ export function createGridHoverEffect({
     setWidths(activeIndex);
   });
   observer.observe(container, { childList: true });
-
-  setWidths(activeIndex);
 
   return (newCollapsedFlexValue) => {
     setWidths(activeIndex, newCollapsedFlexValue ?? collapsedFlexValue);
