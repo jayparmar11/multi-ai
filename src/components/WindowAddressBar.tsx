@@ -1,23 +1,24 @@
 import type { WindowProps } from './types'
 import { useWindowActions } from '../store/windowsStore'
+import { Input } from './ui/input'
 
 function WindowAddressBar({ win }: WindowProps) {
   const { setUrl } = useWindowActions()
   return (
     <form
-      className="flex w-full border-b border-gray-200"
+      className="flex w-full"
       onSubmit={(e) => {
         e.preventDefault()
         const url = (e.currentTarget.elements.namedItem('url') as HTMLInputElement)?.value
         setUrl(win.id, url)
       }}
     >
-      <input
+      <Input
         name="url"
         type="text"
         defaultValue={win.url}
         placeholder="Enter URL..."
-        className="flex-1 outline-none text-sm h-8 px-2 bg-transparent"
+        className="flex-1"
         autoComplete="off"
         spellCheck={false}
       />

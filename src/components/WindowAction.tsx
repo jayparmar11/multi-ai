@@ -1,7 +1,8 @@
 import type { WindowProps } from './types'
-import { Trash2 } from 'lucide-react'
+import { PlusIcon, Trash2 } from 'lucide-react'
 import { MAX_WINDOWS, MIN_WINDOWS } from '../constants'
 import { useActiveWindowId, useWindowActions, useWindows } from '../store/windowsStore'
+import { Button } from './ui/button'
 
 function WindowAction({ win }: WindowProps) {
   const { addWindow, removeWindow } = useWindowActions()
@@ -14,45 +15,42 @@ function WindowAction({ win }: WindowProps) {
     <>
       {isActive && canAdd && (
         <>
-          <button
-            className="absolute bottom-4 left-4 bg-white rounded-full shadow p-2 hover:bg-gray-100 transition"
-            type="button"
+          <Button
+            variant="secondary"
+            size="icon"
+            className="absolute bottom-1 left-1"
             onClick={(e) => {
               e.stopPropagation()
               addWindow('before')
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14" />
-              <path d="M5 12h14" />
-            </svg>
-          </button>
-          <button
-            className="absolute bottom-4 right-4 bg-white rounded-full shadow p-2 hover:bg-gray-100 transition"
-            type="button"
+            <PlusIcon className="size-5" />
+          </Button>
+          <Button
+            className="absolute bottom-1 right-1"
+            variant="secondary"
+            size="icon"
             onClick={(e) => {
               e.stopPropagation()
               addWindow('after')
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 5v14" />
-              <path d="M5 12h14" />
-            </svg>
-          </button>
+            <PlusIcon className="size-5" />
+          </Button>
         </>
       )}
       {canRemove && (
-        <button
-          className={`absolute bottom-4 left-1/2 -translate-x-1/2 bg-white rounded-full shadow p-2 hover:bg-red-100 text-red-500 transition ${isActive ? '' : 'opacity-80'}`}
-          type="button"
+        <Button
+          size="icon"
+          variant="destructive"
+          className="absolute bottom-1 left-1/2 -translate-x-1/2 shadow p-2"
           onClick={(e) => {
             e.stopPropagation()
             removeWindow(win.id)
           }}
         >
-          <Trash2 />
-        </button>
+          <Trash2 className="size-5" />
+        </Button>
       )}
     </>
   )
