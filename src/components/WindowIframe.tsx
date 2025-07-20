@@ -1,9 +1,14 @@
 import type { WindowProps } from './types'
-import { INACTIVE_WINDOW_SIZE } from '@/constants'
+import { useMemo } from 'react'
+import { INACTIVE_WINDOW_SIZE_NUMBER } from '@/constants'
 import { useWindows } from '@/store/windowsStore'
 
 function WindowIframe({ win }: WindowProps) {
   const windows = useWindows()
+
+  const windowWidth = useMemo(() => {
+    return (INACTIVE_WINDOW_SIZE_NUMBER * (windows.length - 1)) + 0.25
+  }, [windows.length])
   return (
     <div className="h-full w-full relative">
       {win.url
@@ -14,7 +19,7 @@ function WindowIframe({ win }: WindowProps) {
                 title={win.id}
                 className="h-full border-none overflow-hidden rounded-lg"
                 style={{
-                  width: `calc(100vw - ${INACTIVE_WINDOW_SIZE} * ${windows.length - 1})`,
+                  width: `calc(100vw - ${windowWidth}rem)`,
                 }}
                 // eslint-disable-next-line react-dom/no-unsafe-iframe-sandbox
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
